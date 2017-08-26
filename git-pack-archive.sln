@@ -1,0 +1,20 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "git-pack-archive", "git-pack-archive\git-pack-archive.csproj", "{DAE647D8-CC86-4D23-8A5B-987CBB16E4C4}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x86 = Debug|x86
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{DAE647D8-CC86-4D23-8A5B-987CBB16E4C4}.Debug|x86.ActiveCfg = Debug|x86
+		{DAE647D8-CC86-4D23-8A5B-987CBB16E4C4}.Debug|x86.Build.0 = Debug|x86
+		{DAE647D8-CC86-4D23-8A5B-987CBB16E4C4}.Release|x86.ActiveCfg = Release|x86
+		{DAE647D8-CC86-4D23-8A5B-987CBB16E4C4}.Release|x86.Build.0 = Release|x86
+	EndGlobalSection
+	GlobalSection(MonoDevelopProperties) = preSolution
+		StartupItem = git-pack-archive\git-pack-archive.csproj
+	EndGlobalSection
+EndGlobal
