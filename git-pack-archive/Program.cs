@@ -11,8 +11,6 @@ namespace gitpackarchive {
 
         public static void Main(string[] args)
         {
-            Console.Error.WriteLine("path={0}", System.Environment.GetEnvironmentVariable("PATH"));
-
             var OutStream = Console.OpenStandardOutput();
             try {
                 DoJob(OutStream);
@@ -40,9 +38,7 @@ namespace gitpackarchive {
 
             string RepoPath = System.Configuration.ConfigurationManager.AppSettings["repoPath"];
             System.IO.Directory.SetCurrentDirectory(RepoPath);
-            Console.Error.WriteLine("Query={0}", Query);
             string Hash = ParseQuery(Query);
-            Console.Error.WriteLine("Hash={0}", Hash);
             if (Hash == null) {
                 ReportInvalid(OutStream, "Should provide hash as `h` parameter");
                 return;
@@ -74,19 +70,14 @@ namespace gitpackarchive {
             p.StartInfo.Arguments = Cmdline;
             p.Start();
             var Buffer = new byte[Size];
-            Console.Error.WriteLine("Start reading");
             int Count;
             if (ReadAndWait(p, Buffer, out Count)) {
                 InitStream(OutStream);
-                Console.Error.WriteLine("Inited");
                 OutStream.Write(Buffer, 0, Size);
-                Console.Error.WriteLine("Started copying");
                 p.StandardOutput.BaseStream.CopyTo(OutStream);
-                Console.Error.WriteLine("Done copying");
                 p.WaitForExit();
             } else {
                 p.StandardOutput.BaseStream.CopyTo(Stream.Null);
-                Console.Error.WriteLine("output ={0}", Ascii.GetString(Buffer, 0, Count));
                 p.WaitForExit();
                 throw new Exception("Command failed to produce output");
             }
@@ -97,7 +88,6 @@ namespace gitpackarchive {
             Count = 0;
             while (Count < Buf.Length && !p.WaitForExit(100)) {
                 Count += p.StandardOutput.BaseStream.Read(Buf, Count, Buf.Length - Count);
-                Console.Error.WriteLine("Count={0}", Count);
             }
             
             if (Count == Buf.Length) {
