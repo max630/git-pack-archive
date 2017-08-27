@@ -61,7 +61,7 @@ namespace gitpackarchive {
                 S => {
                     var W = new BinaryWriter(S);
                     W.Write(Ascii.GetBytes("Status: 200 OK\n"));
-                    W.Write(Ascii.GetBytes("Content-Type: application/x-zip\n"));
+                    W.Write(Ascii.GetBytes("Content-Type: application/octet-stream\n"));
                     W.Write(Ascii.GetBytes("Content-Disposition: filename=\"boo.zip\"\n\n"));
                     W.Flush();
                     // https://stackoverflow.com/a/1084826/2303202
