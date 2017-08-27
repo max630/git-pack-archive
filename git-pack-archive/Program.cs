@@ -40,7 +40,8 @@ namespace gitpackarchive {
                 ReportInvalid(Out, "Should provide hash as `h` parameter");
                 return;
             }
-            RunCommand(
+            ReportBusy(Out);
+/*            RunCommand(
                 "git",
                 string.Format("archive --format=zip {0}", Hash),
                 Out.BaseStream,
@@ -54,7 +55,7 @@ namespace gitpackarchive {
                     // https://stackoverflow.com/a/1084826/2303202
                     HeaderSent = true;
                 }
-            );
+            ); */
         }
 
         private static void RunCommand(string Program, string Cmdline, Stream OutStream, int Size, Action<Stream> InitStream)
