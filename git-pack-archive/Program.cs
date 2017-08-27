@@ -10,6 +10,8 @@ namespace gitpackarchive {
 
         public static void Main(string[] args)
         {
+            Console.Error.WriteLine("path={0}", System.Environment.GetEnvironmentVariable("PATH"));
+
             var OutStream = Console.OpenStandardOutput();
             try {
                 DoJob(OutStream);
@@ -45,7 +47,7 @@ namespace gitpackarchive {
                 return;
             }
             RunCommand(
-                "git",
+                System.Configuration.ConfigurationManager.AppSettings["gitExe"],
                 string.Format("archive --format=zip {0}", Hash),
                 OutStream,
                 1024,
@@ -71,14 +73,20 @@ namespace gitpackarchive {
             p.StartInfo.Arguments = Cmdline;
             p.Start();
             var Buffer = new byte[Size];
+            Console.Error.WriteLine("Start reading");
             var Count = p.StandardOutput.BaseStream.Read(Buffer, 0, Size);
+            Console.Error.WriteLine("read, count={0}", Count);
             if (Count == Size) {
                 InitStream(OutStream);
                 Console.Error.WriteLine("Inited");
                 OutStream.Write(Buffer, 0, Size);
+                Console.Error.WriteLine("Started copying");
                 p.StandardOutput.BaseStream.CopyTo(OutStream);
+                Console.Error.WriteLine("Done copying");
                 p.WaitForExit();
             } else {
+                p.StandardOutput.BaseStream.CopyTo(Stream.Null);
+                Console.Error.WriteLine("output ={0}", Ascii.GetString(Buffer, 0, Count));
                 p.WaitForExit();
                 throw new Exception("Command failed to produce output");
             }
