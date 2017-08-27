@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Text.RegularExpressions;
 
@@ -66,7 +67,7 @@ namespace gitpackarchive {
         private static void RunCommand(string Program, string Cmdline, Stream OutStream, int Size, Action<Stream> InitStream)
         {
             // https://stackoverflow.com/a/206347/2303202
-            var p = new System.Diagnostics.Process();
+            var p = new Process();
             p.StartInfo.UseShellExecute = false;
             p.StartInfo.RedirectStandardOutput = true;
             p.StartInfo.FileName = Program;
@@ -74,9 +75,8 @@ namespace gitpackarchive {
             p.Start();
             var Buffer = new byte[Size];
             Console.Error.WriteLine("Start reading");
-            var Count = p.StandardOutput.BaseStream.Read(Buffer, 0, Size);
-            Console.Error.WriteLine("read, count={0}", Count);
-            if (Count == Size) {
+            int Count;
+            if (ReadAndWait(p, Buffer, out Count)) {
                 InitStream(OutStream);
                 Console.Error.WriteLine("Inited");
                 OutStream.Write(Buffer, 0, Size);
@@ -89,6 +89,23 @@ namespace gitpackarchive {
                 Console.Error.WriteLine("output ={0}", Ascii.GetString(Buffer, 0, Count));
                 p.WaitForExit();
                 throw new Exception("Command failed to produce output");
+            }
+        }
+        
+        private static bool ReadAndWait(Process p, byte[] Buf, out int Count)
+        {
+            Count = 0;
+            while (Count < Buf.Length && !p.WaitForExit(100)) {
+                Count += p.StandardOutput.BaseStream.Read(Buf, Count, Buf.Length - Count);
+                Console.Error.WriteLine("Count={0}", Count);
+            }
+            
+            if (Count == Buf.Length) {
+                return true;
+            } else if (p.HasExited) {
+                return p.ExitCode == 0;
+            } else {
+                throw new Exception("Internal error: should fill buffer");
             }
         }
 
