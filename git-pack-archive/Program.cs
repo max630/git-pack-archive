@@ -38,6 +38,16 @@ namespace gitpackarchive {
 
             string RepoPath = System.Configuration.ConfigurationManager.AppSettings["repoPath"];
             System.IO.Directory.SetCurrentDirectory(RepoPath);
+            try {
+                var f = File.OpenWrite(Path.Combine(".git", "archive.lock"));
+                GC.SuppressFinalize(f);
+            } catch (IOException e) {
+                Console.Error.WriteLine("Lock File error: {0}", e);
+                ReportBusy(OutStream);
+                return;
+            }
+            // to test locking
+            System.Threading.Thread.Sleep(3000);
             string Hash = ParseQuery(Query);
             if (Hash == null) {
                 ReportInvalid(OutStream, "Should provide hash as `h` parameter");
