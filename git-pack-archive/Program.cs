@@ -6,28 +6,32 @@ namespace gitpackarchive {
     class MainClass {
         private static bool HeaderSent = false;
 
+        private static System.Text.ASCIIEncoding Ascii = new System.Text.ASCIIEncoding();
+
         public static void Main(string[] args)
         {
-            var Out = new BinaryWriter(Console.OpenStandardOutput());
+            var OutStream = Console.OpenStandardOutput();
             try {
-                DoJob(Out);
+                DoJob(OutStream);
             } catch (Exception e) {
                 Console.Error.WriteLine("Error: {0}", e);
                 if(HeaderSent) {
                     return;
                 } else {
-                    Out.Write("Status: 500 Fail\n");
-                    Out.Write("Content-type: text/html\n\n");
-                    HeaderSent = true;
-                    Out.Write(
-                        failDoc
-                            .Replace("%admin%", System.Configuration.ConfigurationManager.AppSettings["admin"])
-                            .Replace("%error%", e.Message));
+                    using (var Out = new BinaryWriter(OutStream)) {
+                        Out.Write(Ascii.GetBytes("Status: 500 Fail\n"));
+                        Out.Write(Ascii.GetBytes("Content-type: text/html\n\n"));
+                        HeaderSent = true;
+                        Out.Write(
+                            Ascii.GetBytes(failDoc
+                                .Replace("%admin%", System.Configuration.ConfigurationManager.AppSettings["admin"])
+                                .Replace("%error%", e.Message)));
+                    }
                 }
             }
         }
 
-        private static void DoJob(BinaryWriter Out)
+        private static void DoJob(Stream OutStream)
         {
             string Query = System.Environment.GetEnvironmentVariable("QUERY_STRING");
 
@@ -37,25 +41,24 @@ namespace gitpackarchive {
             string Hash = ParseQuery(Query);
             Console.Error.WriteLine("Hash={0}", Hash);
             if (Hash == null) {
-                ReportInvalid(Out, "Should provide hash as `h` parameter");
+                ReportInvalid(OutStream, "Should provide hash as `h` parameter");
                 return;
             }
-            ReportBusy(Out);
-/*            RunCommand(
+            RunCommand(
                 "git",
                 string.Format("archive --format=zip {0}", Hash),
-                Out.BaseStream,
+                OutStream,
                 1024,
                 S => {
                     var W = new BinaryWriter(S);
-                    W.Write("Status: 200 OK\n");
-                    W.Write("Content-Type: application/x-zip\n");
-                    W.Write("Content-Disposition: filename=\"boo.zip\"\n\n");
+                    W.Write(Ascii.GetBytes("Status: 200 OK\n"));
+                    W.Write(Ascii.GetBytes("Content-Type: application/x-zip\n"));
+                    W.Write(Ascii.GetBytes("Content-Disposition: filename=\"boo.zip\"\n\n"));
                     W.Flush();
                     // https://stackoverflow.com/a/1084826/2303202
                     HeaderSent = true;
                 }
-            ); */
+            );
         }
 
         private static void RunCommand(string Program, string Cmdline, Stream OutStream, int Size, Action<Stream> InitStream)
@@ -93,21 +96,25 @@ namespace gitpackarchive {
             }
         }
 
-        private static void ReportInvalid(BinaryWriter Out, string error)
+        private static void ReportInvalid(Stream OutStream, string error)
         {
-            Out.Write("Status: 400 Wrong\n");
-            Out.Write("Content-type: text/html\n\n");
-            HeaderSent = true;
-            Out.Write(badDoc.Replace("%message%", error));
+            using (var Out = new BinaryWriter(OutStream)) {
+                Out.Write(Ascii.GetBytes("Status: 400 Wrong\n"));
+                Out.Write(Ascii.GetBytes("Content-type: text/html\n\n"));
+                HeaderSent = true;
+                Out.Write(Ascii.GetBytes(badDoc.Replace("%message%", error)));
+            }
         }
 
-        private static void ReportBusy(BinaryWriter Out)
+        private static void ReportBusy(Stream OutStream)
         {
-            Out.Write("Status: 503 Lunch time\n");
-            Out.Write("Retry-after: 60\n");
-            Out.Write("Content-type: text/html\n\n");
-            HeaderSent = true;
-            Out.Write(busyDoc);
+            using (var Out = new BinaryWriter(OutStream)) {
+                Out.Write(Ascii.GetBytes("Status: 503 Lunch time\n"));
+                Out.Write(Ascii.GetBytes("Retry-After: 60\n"));
+                Out.Write(Ascii.GetBytes("Content-Type: text/html\n\n"));
+                HeaderSent = true;
+                Out.Write(Ascii.GetBytes(busyDoc));
+            }
         }
     
         private static readonly string busyDoc =
