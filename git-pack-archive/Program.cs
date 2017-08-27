@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace gitpackarchive {
@@ -47,12 +48,37 @@ namespace gitpackarchive {
                 return;
             }
             // to test locking
-            System.Threading.Thread.Sleep(3000);
+            // System.Threading.Thread.Sleep(3000);
             string Hash = ParseQuery(Query);
             if (Hash == null) {
                 ReportInvalid(OutStream, "Should provide hash as `h` parameter");
                 return;
             }
+            var Mem = new MemoryStream();
+            Mem.Position = 0;
+            RunCommand(
+                System.Configuration.ConfigurationManager.AppSettings["gitExe"],
+                string.Format("show -s --format=%H%n%an%n%aI%n%B {0}", Hash),
+                Mem,
+                1024,
+                S => {}
+            );
+            var ShowData = Mem.ToArray();
+            var ShowLines = Ascii.GetString(ShowData, 0, ShowData.Length).Split(new [] { '\n' }, 4);
+            var ShowPattern = new Regex(System.Configuration.ConfigurationManager.AppSettings["messagePattern"]);
+            var ShowMatch = ShowPattern.Match(ShowLines[3]);
+            if (!ShowMatch.Success) {
+                ReportInvalid(
+                    OutStream,
+                    string.Format(
+                        "The selected commit's message \"{0}\" does not match pattern {1}",
+                        ShowLines[3],
+                        ShowPattern));
+                return;
+            }
+            var Arguments = ShowLines.Take(3).Concat(ShowMatch.Groups.Cast<Group>().Select(g => g.Value)).ToArray();
+            var FilenameDirty = string.Format(System.Configuration.ConfigurationManager.AppSettings["filenameTemplate"], Arguments);
+            var FilenameCleaned = Regex.Replace(FilenameDirty, @"[^-a-z0-9_+,. ]", "_", RegexOptions.IgnoreCase);
             RunCommand(
                 System.Configuration.ConfigurationManager.AppSettings["gitExe"],
                 string.Format("archive --format=zip {0}", Hash),
@@ -62,7 +88,7 @@ namespace gitpackarchive {
                     var W = new BinaryWriter(S);
                     W.Write(Ascii.GetBytes("Status: 200 OK\n"));
                     W.Write(Ascii.GetBytes("Content-Type: application/octet-stream\n"));
-                    W.Write(Ascii.GetBytes("Content-Disposition: filename=\"boo.zip\"\n\n"));
+                    W.Write(Ascii.GetBytes(string.Format("Content-Disposition: filename=\"{0}.zip\"\n\n", FilenameCleaned)));
                     W.Flush();
                     // https://stackoverflow.com/a/1084826/2303202
                     HeaderSent = true;
@@ -83,7 +109,7 @@ namespace gitpackarchive {
             int Count;
             if (ReadAndWait(p, Buffer, out Count)) {
                 InitStream(OutStream);
-                OutStream.Write(Buffer, 0, Size);
+                OutStream.Write(Buffer, 0, Count);
                 p.StandardOutput.BaseStream.CopyTo(OutStream);
                 p.WaitForExit();
             } else {
